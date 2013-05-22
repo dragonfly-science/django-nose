@@ -250,8 +250,19 @@ def _skip_create_test_db(self, verbosity=1, autoclobber=False):
 
 
 def _reusing_db():
-    """Return whether the ``REUSE_DB`` flag was passed"""
-    return os.getenv('REUSE_DB', 'false').lower() in ('true', '1', '')
+    """
+    Return whether the ``NOSE_REUSE_DB`` was set to true in settings or
+    REUSE_DB is set as an environment variable.
+
+    This is a change from the default behavior of setting REUSE_DB as an
+    environment variable.
+    """
+    reuse_db = os.getenv('REUSE_DB', 'false').lower() in ('true', '1', '')
+    try:
+        nose_reuse_db = settings.NOSE_REUSE_DB
+    except AttributeError:
+        nose_reuse_db = False
+    return reuse_db or nose_reuse_db
 
 
 def _can_support_reuse_db(connection):
@@ -356,8 +367,8 @@ class NoseTestSuiteRunner(BasicNoseRunner):
                     reset_statements = connection.ops.sequence_reset_sql(
                             style, self._get_models_for_connection(connection))
 
-                for reset_statement in reset_statements:
-                    cursor.execute(reset_statement)
+                # for reset_statement in reset_statements:
+                #     cursor.execute(reset_statement)
 
                 # Django v1.3 (https://code.djangoproject.com/ticket/9964)
                 # starts using commit_unless_managed() for individual
